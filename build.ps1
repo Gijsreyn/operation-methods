@@ -13,7 +13,8 @@ param(
     [switch]$GetPackageVersion,
     [switch]$SkipLinkCheck,
     [switch]$UseX64MakeAppx,
-    [switch]$UseCratesIO
+    [switch]$UseCratesIO,
+    [switch]$UpdateLockFile
 )
 
 if ($GetPackageVersion) {
@@ -27,6 +28,8 @@ if ($GetPackageVersion) {
 
 $filesForWindowsPackage = @(
     'dsc.exe',
+    'dscecho.exe',
+    'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
     'group.dsc.resource.json',
     'powershell.dsc.resource.json',
@@ -44,6 +47,8 @@ $filesForWindowsPackage = @(
 
 $filesForLinuxPackage = @(
     'dsc',
+    'dscecho',
+    'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
     'apt.dsc.resource.json',
     'apt.dsc.resource.sh',
@@ -56,6 +61,8 @@ $filesForLinuxPackage = @(
 
 $filesForMacPackage = @(
     'dsc',
+    'dscecho',
+    'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
     'brew.dsc.resource.json',
     'brew.dsc.resource.sh',
@@ -208,6 +215,7 @@ if (!$SkipBuild) {
         "security_context_lib",
         "dsc_lib",
         "dsc",
+        "dscecho",
         "osinfo",
         "powershell-adapter",
         "process",
@@ -240,7 +248,12 @@ if (!$SkipBuild) {
             Push-Location "$PSScriptRoot/$project" -ErrorAction Stop
 
             if ($project -eq 'tree-sitter-dscexpression') {
-                ./build.ps1
+                if ($UpdateLockFile) {
+                    cargo generate-lockfile
+                }
+                else {
+                    ./build.ps1
+                }
             }
 
             if (Test-Path "./Cargo.toml")
@@ -259,7 +272,12 @@ if (!$SkipBuild) {
                     }
                 }
                 else {
-                    cargo build @flags
+                    if ($UpdateLockFile) {
+                        cargo generate-lockfile
+                    }
+                    else {
+                        cargo build @flags
+                    }
                 }
             }
 
@@ -352,18 +370,29 @@ if (!$Clippy -and !$SkipBuild) {
 if ($Test) {
     $failed = $false
 
+    $usingADO = ($null -ne $env:TF_BUILD)
+    $repository = 'PSGallery'
+
+    if ($usingADO) {
+        $repository = 'CFS'
+        if ($null -eq (Get-PSResourceRepository -Name CFS -ErrorAction Ignore)) {
+            "Registering CFS repository"
+            Register-PSResourceRepository -uri 'https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/nuget/v2' -Name CFS -Trusted
+        }
+    }
+
     if ($IsWindows) {
         # PSDesiredStateConfiguration module is needed for Microsoft.Windows/WindowsPowerShell adapter
         $FullyQualifiedName = @{ModuleName="PSDesiredStateConfiguration";ModuleVersion="2.0.7"}
         if (-not(Get-Module -ListAvailable -FullyQualifiedName $FullyQualifiedName))
-        {   "Installing module PSDesiredStateConfiguration 2.0.7"
-            Install-PSResource -Name PSDesiredStateConfiguration -Version 2.0.7 -Repository PSGallery -TrustRepository
+        {
+            Install-PSResource -Name PSDesiredStateConfiguration -Version 2.0.7 -Repository $repository -TrustRepository
         }
     }
 
     if (-not(Get-Module -ListAvailable -Name Pester))
     {   "Installing module Pester"
-        Install-PSResource Pester -WarningAction Ignore -Repository PSGallery -TrustRepository
+        Install-PSResource Pester -WarningAction Ignore -Repository $repository -TrustRepository
     }
 
     foreach ($project in $projects) {
@@ -408,7 +437,7 @@ if ($Test) {
         if (-not(Get-Module -ListAvailable -Name Pester))
         {   "Installing module Pester"
             $InstallTargetDir = ($env:PSModulePath -split ";")[0]
-            Find-PSResource -Name 'Pester' -Repository 'PSGallery' | Save-PSResource -Path $InstallTargetDir -TrustRepository
+            Find-PSResource -Name 'Pester' -Repository $repository | Save-PSResource -Path $InstallTargetDir -TrustRepository
         }
 
         "Updated Pester module location:"
