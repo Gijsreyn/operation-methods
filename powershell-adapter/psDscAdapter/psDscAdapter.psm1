@@ -446,19 +446,14 @@ function Invoke-DscOperation {
                             $Result = @{}
                             $raw_obj = $dscResourceInstance.Get()
                             $ValidProperties | ForEach-Object { 
-                                Write-DscTrace -Operation Trace -Message "$($_) = $($raw_obj.$_)"
                                 if ($raw_obj.$_ -is [System.Enum]) {
-                                    Write-DscTrace -Operation Trace -Message "Enum $($_) = $($raw_obj.$_.ToString())"
                                     $Result[$_] = $raw_obj.$_.ToString()
 
-                                    
                                 }
                                 else 
                                 {
-                                    Write-DscTrace -Operation Trace -Message "Value $($_) = $($raw_obj.$_)"
                                     $Result[$_] = $raw_obj.$_
                                 }
-                                # $Result[$_] = $raw_obj.$_
                             }
                             $addToActualState.properties = $Result
                         }
