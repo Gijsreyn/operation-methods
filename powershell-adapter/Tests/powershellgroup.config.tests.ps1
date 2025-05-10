@@ -287,6 +287,7 @@ Describe 'PowerShell adapter resource tests' {
 "@
 
     $out = dsc -l trace config get -i $yaml | ConvertFrom-Json
+    Write-Verbose -Message ($out | ConvertTo-Json -Depth 10 | Out-String) -Verbose
     $LASTEXITCODE | Should -Be 0
     $out.results.result.actualState.result.Ensure | Should -Be 'Present'
   }
