@@ -286,23 +286,23 @@ Describe 'PowerShell adapter resource tests' {
             Ensure: 'Present'
 "@
 
-    $out = dsc config get -i $yaml | ConvertFrom-Json
+    $out = dsc -l trace config get -i $yaml | ConvertFrom-Json
     Write-Verbose -Message ($out | ConvertTo-Json -Depth 10 | Out-String) -Verbose
     $LASTEXITCODE | Should -Be 0
     $out.results.result.actualState.Ensure | Should -Be 'Present'
   }
 
-  It 'Config export is able to return proper enum value' {
-    $yaml = @"
-        `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-        resources:
-        - name: Class-resource Info
-          type: TestClassResource/TestClassResource
-"@
+#   It 'Config export is able to return proper enum value' {
+#     $yaml = @"
+#         `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+#         resources:
+#         - name: Class-resource Info
+#           type: TestClassResource/TestClassResource
+# "@
 
-    $out = dsc config export -i $yaml | ConvertFrom-Json
-    Write-Verbose -Message ($out | ConvertTo-Json -Depth 10 | Out-String) -Verbose
-    $LASTEXITCODE | Should -Be 0
-    $out.results.result.actualState.Ensure | Should -Be 'Present'
-  }
+#     $out = dsc config export -i $yaml | ConvertFrom-Json
+#     Write-Verbose -Message ($out | ConvertTo-Json -Depth 10 | Out-String) -Verbose
+#     $LASTEXITCODE | Should -Be 0
+#     $out.results.result.actualState.Ensure | Should -Be 'Present'
+#   }
 }

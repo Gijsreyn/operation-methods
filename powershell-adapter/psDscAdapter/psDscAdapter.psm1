@@ -480,14 +480,15 @@ function Invoke-DscOperation {
                             foreach ($raw_obj in $raw_obj_array) {
                                 $Result_obj = @{}
                                 $ValidProperties | ForEach-Object {
-                                    if ([string]::IsNullOrEmpty($raw_obj.$_)) { 
-                                        if ($raw_obj.$_ -is [System.Enum]) {
-                                            $Result_obj[$_] = $raw_obj.$_.ToString()
-                                            continue
-                                        }
-                                        $Result_obj[$_] = $raw_obj.$_ 
+                                    # if ([string]::IsNullOrEmpty($raw_obj.$_)) { 
+                                    #     if ($raw_obj.$_ -is [System.Enum]) {
+                                    #         $Result_obj[$_] = $raw_obj.$_.ToString()
+                                    #         continue
+                                    #     }
+                                    #     $Result_obj[$_] = $raw_obj.$_ 
                                
-                                    }
+                                    # }
+                                    $Result_obj[$_] = $raw_obj.$_.ToString()
                                 }
                                 $resultArray += $Result_obj
                             }
