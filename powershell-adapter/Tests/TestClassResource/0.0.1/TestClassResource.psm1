@@ -8,6 +8,11 @@ enum EnumPropEnumeration {
     Expected
 }
 
+enum Ensure {
+    Present
+    Absent
+}
+
 class BaseTestClass
 {
     [DscProperty()]
@@ -28,6 +33,9 @@ class TestClassResource : BaseTestClass
 
     [DscProperty()]
     [string] $EnumProp
+
+    [DscProperty()]
+    [Ensure] $Ensure
 
     [DscProperty()]
     [PSCredential] $Credential
