@@ -445,7 +445,10 @@ function Invoke-DscOperation {
                         'Get' {
                             $Result = @{}
                             $raw_obj = $dscResourceInstance.Get()
-                            $ValidProperties | ForEach-Object { $Result[$_] = $raw_obj.$_  }
+                            $ValidProperties | ForEach-Object { 
+                                Write-DscTrace -Operation Trace -Message "$($_) = $($raw_obj.$_)"
+                                $Result[$_] = $raw_obj.$_
+                            }
                             $addToActualState.properties = $Result
                         }
                         'Set' {

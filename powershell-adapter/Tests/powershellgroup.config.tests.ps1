@@ -123,7 +123,7 @@ Describe 'PowerShell adapter resource tests' {
                 - name: Class-resource Info
                   type: TestClassResource/TestClassResource
 "@
-      $out = $yaml | dsc config export -f -
+      $out = $yaml | dsc -l trace config export -f -
       $LASTEXITCODE | Should -Be 0
       $res = $out | ConvertFrom-Json
       $res.'$schema' | Should -BeExactly 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
