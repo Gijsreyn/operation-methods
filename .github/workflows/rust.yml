@@ -2,7 +2,7 @@ name: Rust
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "*" ]  # Triggers on push to any branch
   pull_request:
     branches: [ "main" ]
     paths-ignore:
@@ -39,10 +39,10 @@ jobs:
       run: sudo apt update && sudo apt install musl-tools -y
     - name: Build
       shell: pwsh
-      run: ./build.ps1 -clippy -target x86_64-unknown-linux-musl
+      run: ./build.ps1 -clippy -target x86_64-unknown-linux-musl -UseCratesIO
     - name: Run tests
       shell: pwsh
-      run: ./build.ps1 -test -target x86_64-unknown-linux-musl
+      run: ./build.ps1 -test -target x86_64-unknown-linux-musl -UseCratesIO
 
   build-windows:
 
@@ -55,7 +55,7 @@ jobs:
       run: ./build.ps1 -clippy
     - name: Run tests
       shell: pwsh
-      run: ./build.ps1 -test
+      run: ./build.ps1 -test -UseCratesIO
 
   build-macos:
 
@@ -68,4 +68,4 @@ jobs:
       run: ./build.ps1 -clippy
     - name: Run tests
       shell: pwsh
-      run: ./build.ps1 -test
+      run: ./build.ps1 -test -UseCratesIO
