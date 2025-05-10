@@ -449,6 +449,9 @@ function Invoke-DscOperation {
                                 Write-DscTrace -Operation Trace -Message "$($_) = $($raw_obj.$_)"
                                 if ($raw_obj.$_ -is [System.Enum]) {
                                     Write-DscTrace -Operation Trace -Message "Enum $($_) = $($raw_obj.$_.ToString())"
+                                    $Result[$_] = $raw_obj.$_.ToString()
+
+                                    continue
                                 }
                                 $Result[$_] = $raw_obj.$_
                             }
