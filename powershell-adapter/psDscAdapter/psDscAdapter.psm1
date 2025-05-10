@@ -451,9 +451,14 @@ function Invoke-DscOperation {
                                     Write-DscTrace -Operation Trace -Message "Enum $($_) = $($raw_obj.$_.ToString())"
                                     $Result[$_] = $raw_obj.$_.ToString()
 
-                                    continue
+                                    
                                 }
-                                $Result[$_] = $raw_obj.$_
+                                else 
+                                {
+                                    Write-DscTrace -Operation Trace -Message "Value $($_) = $($raw_obj.$_)"
+                                    $Result[$_] = $raw_obj.$_
+                                }
+                                # $Result[$_] = $raw_obj.$_
                             }
                             $addToActualState.properties = $Result
                         }
