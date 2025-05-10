@@ -445,12 +445,7 @@ function Invoke-DscOperation {
                         'Get' {
                             $Result = @{}
                             $raw_obj = $dscResourceInstance.Get()
-                            $ValidProperties | ForEach-Object {
-                                if (-not [string]::IsNullOrEmpty($raw_obj.$_)) {
-                                    Write-DscTrace -Operation Trace -Message "$($_) = $($raw_obj.$_)"
-                                    $Result[$_] = $raw_obj.$_
-                            }
-                        }
+                            $ValidProperties | ForEach-Object { $Result[$_] = $raw_obj.$_  }
                             $addToActualState.properties = $Result
                         }
                         'Set' {
@@ -478,17 +473,7 @@ function Invoke-DscOperation {
                             $raw_obj_array = $method.Invoke($null, $null)
                             foreach ($raw_obj in $raw_obj_array) {
                                 $Result_obj = @{}
-                                $ValidProperties | ForEach-Object {
-                                    # if ([string]::IsNullOrEmpty($raw_obj.$_)) { 
-                                    #     if ($raw_obj.$_ -is [System.Enum]) {
-                                    #         $Result_obj[$_] = $raw_obj.$_.ToString()
-                                    #         continue
-                                    #     }
-                                    #     $Result_obj[$_] = $raw_obj.$_ 
-                               
-                                    # }
-                                    $Result_obj[$_] = $raw_obj.$_.ToString()
-                                }
+                                $ValidProperties | ForEach-Object { $Result_obj[$_] = $raw_obj.$_ }
                                 $resultArray += $Result_obj
                             }
                             $addToActualState = $resultArray
