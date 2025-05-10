@@ -82,7 +82,7 @@ Describe 'PowerShell adapter resource tests' {
     $res = $out | ConvertFrom-Json
     $res.'$schema' | Should -BeExactly 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
     $res.'resources' | Should -Not -BeNullOrEmpty
-    $res.resources[0].properties.result.count | Should -Be 6
+    $res.resources[0].properties.result.count | Should -Be 5
     $res.resources[0].properties.result[0].Name | Should -Be "Object1"
     $res.resources[0].properties.result[0].Prop1 | Should -Be "Property of object1"
   }
@@ -128,7 +128,7 @@ Describe 'PowerShell adapter resource tests' {
       $res = $out | ConvertFrom-Json
       $res.'$schema' | Should -BeExactly 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
       $res.'resources' | Should -Not -BeNullOrEmpty
-      $res.resources[0].properties.result.count | Should -Be 6
+      $res.resources[0].properties.result.count | Should -Be 5
       $res.resources[0].properties.result[0].Name | Should -Be "Object1"
       $res.resources[0].properties.result[0].Prop1 | Should -Be "Property of object1"
     }
@@ -307,7 +307,7 @@ Describe 'PowerShell adapter resource tests' {
     $out = dsc config export -i $yaml | ConvertFrom-Json
     Write-Verbose -Message ($out | ConvertTo-Json -Depth 10 | Out-String) -Verbose
     $LASTEXITCODE | Should -Be 0
-    $out.resources[0].properties.result.count | Should -Be 6
+    $out.resources[0].properties.result.count | Should -Be 5
     $out.resources[0].properties.result[0].Name | Should -Be "Object1"
     $out.resources[0].properties.result[0].Prop1 | Should -Be "Property of object1"
   }
