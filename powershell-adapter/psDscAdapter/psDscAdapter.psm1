@@ -447,12 +447,7 @@ function Invoke-DscOperation {
                             $raw_obj = $dscResourceInstance.Get()
                             $ValidProperties | ForEach-Object {
                                 if (-not [string]::IsNullOrEmpty($raw_obj.$_)) {
-                                    "$raw_obj.$_ is not null" | Write-DscTrace -Operation Trace
-                                    if ($raw_obj.$_ -is [System.Enum]) {
-                                        "We are here" | Write-DscTrace -Operation Trace
-                                        $Result[$_] = $raw_obj.$_.ToString()
-                                        continue
-                                    }
+                                    Write-DscTrace -Operation Trace -Message "$($_) = $($raw_obj.$_)"
                                     $Result[$_] = $raw_obj.$_
                             }
                         }
