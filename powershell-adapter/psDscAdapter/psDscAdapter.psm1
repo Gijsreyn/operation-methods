@@ -447,6 +447,7 @@ function Invoke-DscOperation {
                             $raw_obj = $dscResourceInstance.Get()
                             $ValidProperties | ForEach-Object { 
                                 if ($raw_obj.$_ -is [System.Enum]) {
+                                    Write-DscTrace -Operation Trace -Message "Enum property '$($_)'"
                                     $Result[$_] = $raw_obj.$_.ToString()
                                 }
                                 else {

@@ -286,7 +286,7 @@ Describe 'PowerShell adapter resource tests' {
             Ensure: 'Present'
 "@
 
-    $out = dsc config get -i $yaml | ConvertFrom-Json
+    $out = dsc -l trace config get -i $yaml | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0
     $out.results.result.actualState.result.Ensure | Should -Be 'Present'
   }
