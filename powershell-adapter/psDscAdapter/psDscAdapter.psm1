@@ -109,6 +109,7 @@ function FindAndParseResourceDefinitions {
     #TODO: Ensure embedded instances in properties are working correctly
     [System.Management.Automation.Language.Token[]] $tokens = $null
     [System.Management.Automation.Language.ParseError[]] $errors = $null
+    LoadPowerShellDependentResourceModule -filepath $filePath
     $ast = [System.Management.Automation.Language.Parser]::ParseFile($filePath, [ref]$tokens, [ref]$errors)
     foreach ($e in $errors) {
         $e | Out-String | Write-DscTrace -Operation Error
@@ -147,6 +148,26 @@ function FindAndParseResourceDefinitions {
     }
 
     return $resourceList
+}
+
+function LoadPowerShellDependentResourceModule {
+    [CmdletBinding(HelpUri = '')]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$filepath
+    )
+
+    "Validating required dependencies for '$filepath'" | Write-DscTrace -Operation Trace
+
+    $moduleManifest = Get-ChildItem -Path (Split-Path $filepath -Parent) -Filter "*.psd1" -ErrorAction Ignore
+
+    if ($moduleManifest) {
+        $manifest = Import-PowerShellDataFile -Path $moduleManifest.FullName -ErrorAction Ignore
+        foreach ($requiredModule in $manifest.RequiredModules) {
+            "Loading required module '$($requiredModule)' from manifest '$($moduleManifest.FullName)'" | Write-DscTrace -Operation Trace
+            Import-Module -Name $requiredModule -ErrorAction Ignore -Force | Out-Null
+        }
+    }
 }
 
 function LoadPowerShellClassResourcesFromModule {
