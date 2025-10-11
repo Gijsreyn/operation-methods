@@ -4,7 +4,7 @@
 use chrono::{DateTime, Local};
 use rust_i18n::t;
 use schemars::{JsonSchema, json_schema};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, fmt::Display};
 
@@ -211,11 +211,27 @@ pub enum CopyMode {
     Parallel,
 }
 
+/// Custom deserializer for count field that accepts both integers and strings
+fn deserialize_count<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = Value::deserialize(deserializer)?;
+    match value {
+        Value::Number(n) => Ok(n.to_string()),
+        Value::String(s) => Ok(s),
+        _ => Err(serde::de::Error::custom("count must be a number or string")),
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Copy {
     pub name: String,
-    pub count: i64,
+    /// The count can be a literal integer or a DSC expression that evaluates to an integer.
+    /// Examples: 3, "3", or "[length(parameters('items'))]"
+    #[serde(deserialize_with = "deserialize_count")]
+    pub count: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mode: Option<CopyMode>,
     #[serde(skip_serializing_if = "Option::is_none", rename = "batchSize")]

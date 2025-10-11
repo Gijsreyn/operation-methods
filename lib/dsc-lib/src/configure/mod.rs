@@ -934,7 +934,7 @@ impl Configurator {
             }
             // defer actual unrolling until parameters are available
             if let Some(copy) = &resource.copy {
-                debug!("{}", t!("configure.mod.validateCopy", name = &copy.name, count = copy.count));
+                debug!("{}", t!("configure.mod.validateCopy", name = &copy.name, count = &copy.count));
                 if copy.mode.is_some() {
                     return Err(DscError::Validation(t!("configure.mod.copyModeNotSupported").to_string()));
                 }
@@ -958,11 +958,25 @@ impl Configurator {
         for resource in config_copy.resources {
             // if the resource contains `Copy`, unroll it
             if let Some(copy) = &resource.copy {
-                debug!("{}", t!("configure.mod.unrollingCopy", name = &copy.name, count = copy.count));
+                // Evaluate the count expression to get the integer value
+                let count_value = self.statement_parser.parse_and_execute(&copy.count, &self.context)?;
+                
+                // Try to get the count as an integer - handle both direct integers and string representations
+                let count = if let Some(n) = count_value.as_i64() {
+                    n
+                } else if let Some(s) = count_value.as_str() {
+                    // Try to parse the string as an integer
+                    s.parse::<i64>()
+                        .map_err(|_| DscError::Parser(t!("configure.mod.copyCountNotInteger", count = copy.count).to_string()))?
+                } else {
+                    return Err(DscError::Parser(t!("configure.mod.copyCountNotInteger", count = copy.count).to_string()));
+                };
+                
+                debug!("{}", t!("configure.mod.unrollingCopy", name = &copy.name, count = count));
                 self.context.process_mode = ProcessMode::Copy;
                 self.context.copy_current_loop_name.clone_from(&copy.name);
                 let mut copy_resources = Vec::<Resource>::new();
-                for i in 0..copy.count {
+                for i in 0..count {
                     self.context.copy.insert(copy.name.clone(), i);
                     let mut new_resource = resource.clone();
                     let Value::String(new_name) = self.statement_parser.parse_and_execute(&resource.name, &self.context)? else {
