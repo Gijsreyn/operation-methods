@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::configure::config_doc::DataType;
-use crate::configure::parameters::{SecureObject, SecureString};
+use crate::configure::parameters::{SecureObject};
 use crate::DscError;
 use crate::configure::context::Context;
 use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
@@ -34,16 +34,12 @@ impl Function for Parameters {
             if context.parameters.contains_key(key) {
                 let (value, data_type) = &context.parameters[key];
 
-                // if secureString or secureObject types, we keep it as JSON object
+                // Validate the value matches the expected data type
                 match data_type {
                     DataType::SecureString => {
-                        let Some(value) = value.as_str() else {
+                        let Some(_value) = value.as_str() else {
                             return Err(DscError::Parser(t!("functions.parameters.keyNotString", key = key).to_string()));
                         };
-                        let secure_string = SecureString {
-                            secure_string: value.to_string(),
-                        };
-                        return Ok(serde_json::to_value(secure_string)?);
                     },
                     DataType::SecureObject => {
                         let secure_object = SecureObject {
