@@ -34,7 +34,6 @@ impl Function for Parameters {
             if context.parameters.contains_key(key) {
                 let (value, data_type) = &context.parameters[key];
 
-                // Validate the value matches the expected data type
                 match data_type {
                     DataType::SecureString => {
                         let Some(_value) = value.as_str() else {
