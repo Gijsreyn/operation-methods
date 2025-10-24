@@ -5,11 +5,6 @@ on:
     branches: [ "*" ]
   pull_request:
     branches: [ "main", "release/*" ]
-    paths-ignore:
-      - "docs/**"
-      - "*.md"
-      - ".vscode/*.json"
-      - ".github/ISSUE_TEMPLATE/**"
 
 env:
   CARGO_TERM_COLOR: always
