@@ -23,7 +23,7 @@ use self::constraints::{check_length, check_number_limits, check_allowed_values}
 use rust_i18n::t;
 use dsc_lib_security_context::{SecurityContext, get_security_context};
 use serde_json::{Map, Value};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::collections::HashMap;
 use tracing::{debug, info, trace, warn};
 pub mod context;
@@ -40,6 +40,8 @@ pub struct Configurator {
     discovery: Discovery,
     statement_parser: Statement,
     progress_format: ProgressFormat,
+    /// CLI-provided variables files (applied after document-level files and inline variables)
+    cli_variables_files: Option<Vec<String>>,
 }
 
 /// Add the results of an export operation to a configuration.
@@ -312,6 +314,7 @@ impl Configurator {
             discovery: discovery.clone(),
             statement_parser: Statement::new()?,
             progress_format,
+            cli_variables_files: None,
         };
         config.validate_config()?;
         for extension in discovery.extensions.values() {
@@ -814,6 +817,18 @@ impl Configurator {
         self.context.system_root = PathBuf::from(system_root);
     }
 
+    /// Set CLI-provided variables files.
+    ///
+    /// These files are loaded after document-level variablesFiles and inline variables,
+    /// giving them the highest precedence.
+    ///
+    /// # Arguments
+    ///
+    /// * `files` - The list of variables file paths from CLI.
+    pub fn set_cli_variables_files(&mut self, files: Option<Vec<String>>) {
+        self.cli_variables_files = files;
+    }
+
     /// Set the parameters and variables context for the configuration.
     ///
     /// # Arguments
@@ -928,22 +943,113 @@ impl Configurator {
     }
 
     fn set_variables(&mut self, config: &Configuration) -> Result<(), DscError> {
-        let Some(variables) = &config.variables else {
-            debug!("{}", t!("configure.mod.noVariables"));
-            return Ok(());
-        };
-
-        for (name, value) in variables {
-            let new_value = if let Some(string) = value.as_str() {
-                self.statement_parser.parse_and_execute(string, &self.context)?
+        // 1. Load variables from document-level variablesFiles (in order)
+        if let Some(files) = &config.variables_files {
+            for file_path in files {
+                self.load_variables_from_file(file_path)?;
             }
-            else {
-                value.clone()
-            };
-            info!("{}", t!("configure.mod.setVariable", name = name, value = new_value));
-            self.context.variables.insert(name.to_string(), new_value);
         }
+
+        // 2. Load inline variables from the document (override file variables)
+        if let Some(variables) = &config.variables {
+            for (name, value) in variables {
+                let new_value = if let Some(string) = value.as_str() {
+                    self.statement_parser.parse_and_execute(string, &self.context)?
+                }
+                else {
+                    value.clone()
+                };
+                info!("{}", t!("configure.mod.setVariable", name = name, value = new_value));
+                self.context.variables.insert(name.to_string(), new_value);
+            }
+        } else if config.variables_files.is_none() && self.cli_variables_files.is_none() {
+            debug!("{}", t!("configure.mod.noVariables"));
+        }
+
+        // 3. Load CLI variables files (highest precedence)
+        if let Some(files) = &self.cli_variables_files.clone() {
+            for file_path in files {
+                self.load_variables_from_file(file_path)?;
+            }
+        }
+
         Ok(())
+    }
+
+    /// Load variables from an external file (YAML or JSON).
+    ///
+    /// # Arguments
+    ///
+    /// * `file_path` - Path to the variables file (relative to DSC_CONFIG_ROOT or absolute).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be read, parsed, or contains invalid content.
+    fn load_variables_from_file(&mut self, file_path: &str) -> Result<(), DscError> {
+        let normalized_path = self.normalize_variables_file_path(file_path)?;
+        info!("{}", t!("configure.mod.loadingVariablesFile", path = normalized_path.display()));
+
+        // Validate file extension
+        let extension = normalized_path.extension()
+            .and_then(|ext| ext.to_str())
+            .unwrap_or("");
+        if !["json", "yaml", "yml"].contains(&extension.to_lowercase().as_str()) {
+            return Err(DscError::Validation(
+                t!("configure.mod.invalidVariablesFileExtension", path = file_path, extension = extension).to_string()
+            ));
+        }
+
+        // Read and parse the file
+        let content = std::fs::read_to_string(&normalized_path).map_err(|err| {
+            DscError::Validation(t!("configure.mod.variablesFileNotFound", path = file_path, error = err).to_string())
+        })?;
+
+        let json_content = crate::util::parse_input_to_json(&content).map_err(|err| {
+            DscError::Validation(t!("configure.mod.invalidVariablesFile", path = file_path, error = err).to_string())
+        })?;
+
+        let file_variables: Map<String, Value> = serde_json::from_str(&json_content).map_err(|err| {
+            DscError::Validation(t!("configure.mod.invalidVariablesFile", path = file_path, error = err).to_string())
+        })?;
+
+        let count = file_variables.len();
+        for (name, value) in file_variables {
+            // Variables from files are static - no expression evaluation
+            info!("{}", t!("configure.mod.setVariable", name = name, value = value));
+            self.context.variables.insert(name, value);
+        }
+        info!("{}", t!("configure.mod.variablesFileMerged", count = count, path = normalized_path.display()));
+
+        Ok(())
+    }
+
+    /// Normalize a variables file path.
+    ///
+    /// Resolves relative paths against DSC_CONFIG_ROOT or current directory.
+    /// Rejects paths containing parent directory references (..).
+    fn normalize_variables_file_path(&self, file_path: &str) -> Result<PathBuf, DscError> {
+        let path = Path::new(file_path);
+
+        if path.is_absolute() {
+            return Ok(path.to_path_buf());
+        }
+
+        // Check for parent directory traversal
+        if path.components().any(|c| c == std::path::Component::ParentDir) {
+            return Err(DscError::Validation(
+                t!("configure.mod.variablesFileParentDir", path = file_path).to_string()
+            ));
+        }
+
+        // Use DSC_CONFIG_ROOT or current directory
+        let base_path = std::env::var("DSC_CONFIG_ROOT")
+            .unwrap_or_else(|_| {
+                std::env::current_dir()
+                    .map(|p| p.to_string_lossy().into_owned())
+                    .unwrap_or_else(|_| ".".to_string())
+            });
+
+        Ok(Path::new(&base_path).join(path))
     }
 
     fn set_user_functions(&mut self, config: &Configuration) -> Result<(), DscError> {

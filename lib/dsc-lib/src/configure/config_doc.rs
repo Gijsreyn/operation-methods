@@ -200,6 +200,11 @@ pub struct Configuration {
     pub resources: Vec<Resource>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub variables: Option<Map<String, Value>>,
+    /// List of external files containing variables to load. Files are processed in order,
+    /// with later files overriding earlier ones. Paths are relative to the configuration
+    /// document location.
+    #[serde(rename = "variablesFiles", skip_serializing_if = "Option::is_none")]
+    pub variables_files: Option<Vec<String>>,
     /// Irrelevant Bicep metadata from using the extension
     #[serde(skip_serializing_if = "Option::is_none")]
     pub imports: Option<Map<String, Value>>,
@@ -444,6 +449,7 @@ impl Configuration {
             resources: Vec::new(),
             functions: None,
             variables: None,
+            variables_files: None,
             outputs: None,
             imports: None,
             extensions: None,

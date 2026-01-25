@@ -70,6 +70,8 @@ pub enum SubCommand {
         parameters: Option<String>,
         #[clap(short = 'f', long, help = t!("args.parametersFile").to_string())]
         parameters_file: Option<String>,
+        #[clap(short = 'v', long, help = t!("args.variablesFile").to_string())]
+        variables_file: Option<Vec<String>>,
         #[clap(short = 'r', long, help = t!("args.systemRoot").to_string())]
         system_root: Option<String>,
         // Used to inform when DSC is used as a group resource to modify it's output

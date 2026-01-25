@@ -53,7 +53,7 @@ fn main() {
             let mut cmd = Args::command();
             generate(shell, &mut cmd, "dsc", &mut io::stdout());
         },
-        SubCommand::Config { subcommand, parameters, parameters_file, system_root, as_group, as_assert, as_include } => {
+        SubCommand::Config { subcommand, parameters, parameters_file, variables_file, system_root, as_group, as_assert, as_include } => {
             let params = get_input(None, parameters_file.as_ref());
             let file_params = if params.is_empty() {
                 None
@@ -77,7 +77,7 @@ fn main() {
                 (None, None) => None,
             };
 
-            subcommand::config(&subcommand, &merged_parameters, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format);
+            subcommand::config(&subcommand, &merged_parameters, variables_file.as_ref(), system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format);
         },
         SubCommand::Extension { subcommand } => {
             subcommand::extension(&subcommand, progress_format);

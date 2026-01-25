@@ -276,7 +276,7 @@ fn initialize_config_root(path: Option<&String>) -> Option<String> {
 
 #[allow(clippy::too_many_lines)]
 #[allow(clippy::too_many_arguments)]
-pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounted_path: Option<&String>, as_group: &bool, as_assert: &bool, as_include: &bool, progress_format: ProgressFormat) {
+pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, variables_files: Option<&Vec<String>>, mounted_path: Option<&String>, as_group: &bool, as_assert: &bool, as_include: &bool, progress_format: ProgressFormat) {
     let (new_parameters, json_string) = match subcommand {
         ConfigSubCommand::Get { input, file, .. } |
         ConfigSubCommand::Set { input, file, .. } |
@@ -374,6 +374,11 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
         } else {
             configurator.set_system_root(path);
         }
+    }
+
+    // Set CLI variables files before setting context so they get loaded with highest precedence
+    if let Some(files) = variables_files {
+        configurator.set_cli_variables_files(Some(files.clone()));
     }
 
     if let Err(err) = configurator.set_context(parameters.as_ref()) {
