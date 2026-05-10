@@ -264,7 +264,7 @@ to the PowerShell scripts or when the input data is in an unexpected format.
 
 <!-- Link definitions -->
 [00]: ../../../../concepts/dsc/resource-capabilities.md
-[01]: ./examples/run-simple-powershell-script.md
+[01]: ./examples/run-a-simple-powershell-script.md
 [02]: ./examples/powershell-script-with-input-output.md
 [03]: ../RunCommandOnSet/index.md
 [04]: ../../PowerShell/index.md
